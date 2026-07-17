@@ -1,18 +1,9 @@
-// التحقق ما إذا كانت معرّفة مسبقاً لمنع الخطأ تماماً
-if (!window.supabase) {
-    const SUPABASE_URL = "https://oskelvbndtqvaxxfujhs.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9za2VsdmJuZHRxdmF4eGZ1amhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMjA5MDYsImV4cCI6MjA5OTc5NjkwNn0.qI_Khh_p1gNFHuwTZPuedqC6WmiWf2IzHWqchGL1yf4"; 
-    window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
-// تعريف متغير محلي لتسهيل بقية الكود في الملف
-var supabase = window.supabase;
 // ===== إعدادات نظام الرتب المسموحة داخل اللعبة =====
-// ⚠️ اكتب هنا أسماء الرتب المسموح لها بدخول الموقع تماماً كما تظهر في روبلوكس
 const ALLOWED_IN_GAME_RANKS = ["رئيس الهيئة", "وزير الداخلية", "ضابط عمليات", "ملازم أول", "نقيب", "ملازم"]; 
 
-// ⚠️ تم التحديث بـ Client ID الجديد الخاص بك من لوحة تحكم روبلوكس
+// الـ Client ID الخاص بك من لوحة تحكم روبلوكس
 const ROBLOX_CLIENT_ID = "2210294996016219388";
-const REDIRECT_URI = window.location.origin; // رابط موقعك الحالي (محلياً أو على GitHub Pages)
+const REDIRECT_URI = window.location.origin; 
 
 // ===== حالة النظام =====
 const state = {
@@ -62,7 +53,6 @@ function checkUrlForAuthCode() {
     const code = urlParams.get('code');
     
     if (code) {
-        // إزالة الكود من الرابط لمنع التكرار
         window.history.replaceState({}, document.title, window.location.pathname);
         exchangeCodeForToken(code);
     }
@@ -72,7 +62,6 @@ async function exchangeCodeForToken(code) {
     showToast('جاري التحقق من حساب روبلوكس...', 'info');
     
     try {
-        // تم تهيئة الطلب ليتوافق مع Public Client (بدون الحاجة للـ Client Secret) لحمايتك
         const response = await fetch(`https://apis.roblox.com/oauth/v1/token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -106,7 +95,6 @@ async function verifyRobloxUser(accessToken) {
         state.robloxUserId = userData.id;
         state.userName = userData.name;
         
-        // التحقق من الرتبة في اللعبة والربط مع الـ Database مباشرة
         await setupSupabaseAuth(userData.id, userData.name);
     } catch (error) {
         console.error('Verification Error:', error);
@@ -193,8 +181,9 @@ function updateUI() {
 let sessionSubscription = null;
 
 async function listenForServerUpdates(userId) {
-    // 1. جلب بيانات السيرفر الحالية للاعب عند التحميل الأول
-    const { data, error } = await supabase
+    if (!window.supabaseClient) return;
+
+    const { data, error } = await window.supabaseClient
         .from('sessions')
         .select('*')
         .eq('user_id', userId)
@@ -203,27 +192,22 @@ async function listenForServerUpdates(userId) {
     if (!error && data) {
         state.serverId = data.jobId;
         state.userTeam = data.team;
-        state.userRank = data.rank_name; // الرتبة التي أرسلها سكربت اللعبة المحدث
+        state.userRank = data.rank_name;
         
-        // التحقق من أن الرتبة تقع ضمن الرتب المسموحة التي حددتها بالأعلى
         state.isPolice = ALLOWED_IN_GAME_RANKS.includes(state.userRank);
-        
         elements.serverId.textContent = state.serverId || 'غير متصل';
         updateUI();
     } else {
-        // إذا لم يكن باللعبة
         state.isPolice = false;
         state.userRank = "خارج اللعبة";
         updateUI();
     }
 
-    // 2. إلغاء أي اشتراك قديم لتفادي التكرار
     if (sessionSubscription) {
-        supabase.removeChannel(sessionSubscription);
+        window.supabaseClient.removeChannel(sessionSubscription);
     }
 
-    // 3. بدء الاستماع الحي لتحديث رتبة وفريق وجلسة اللاعب فوراً أثناء تواجده بالسيرفر
-    sessionSubscription = supabase
+    sessionSubscription = window.supabaseClient
         .channel(`realtime-sessions-${userId}`)
         .on(
             'postgres_changes',
@@ -235,13 +219,10 @@ async function listenForServerUpdates(userId) {
                     state.userTeam = updatedData.team;
                     state.userRank = updatedData.rank_name;
                     
-                    // التحقق من الرتبة في اللعبة فور حدوث أي تحديث تلقائي
                     state.isPolice = ALLOWED_IN_GAME_RANKS.includes(state.userRank);
-                    
                     elements.serverId.textContent = state.serverId || 'غير متصل';
                     updateUI();
                 } else {
-                    // في حال الخروج (Delete session)
                     state.serverId = null;
                     state.userTeam = "Neutral";
                     state.userRank = "خارج اللعبة";
@@ -254,13 +235,13 @@ async function listenForServerUpdates(userId) {
         .subscribe();
 }
 
-// ===== 4. إدارة المحادثات (جدول chat في Supabase) =====
+// ===== 4. إدارة المحادثات =====
 let chatSubscription = null;
 
 async function initializeChatListener() {
-    if (!state.serverId) return;
+    if (!state.serverId || !window.supabaseClient) return;
 
-    const { data: messages, error } = await supabase
+    const { data: messages, error } = await window.supabaseClient
         .from('chat')
         .select('*')
         .eq('server_id', state.serverId)
@@ -284,10 +265,10 @@ async function initializeChatListener() {
     }
 
     if (chatSubscription) {
-        supabase.removeChannel(chatSubscription);
+        window.supabaseClient.removeChannel(chatSubscription);
     }
 
-    chatSubscription = supabase
+    chatSubscription = window.supabaseClient
         .channel(`realtime-chat-${state.serverId}-${state.currentFrequency}`)
         .on(
             'postgres_changes',
@@ -346,9 +327,9 @@ function renderMessages(messages) {
 
 async function sendMessage() {
     const content = elements.chatInput.value.trim();
-    if (!content || !state.isPolice || !state.serverId) return;
+    if (!content || !state.isPolice || !state.serverId || !window.supabaseClient) return;
 
-    const { error } = await supabase
+    const { error } = await window.supabaseClient
         .from('chat')
         .insert([
             {
@@ -371,13 +352,13 @@ async function sendMessage() {
     }
 }
 
-// ===== 5. إدارة البلاغات (جدول dispatches في Supabase) =====
+// ===== 5. إدارة البلاغات =====
 let dispatchSubscription = null;
 
 async function initializeDispatchListener() {
-    if (!state.serverId) return;
+    if (!state.serverId || !window.supabaseClient) return;
 
-    const { data: dispatches, error } = await supabase
+    const { data: dispatches, error } = await window.supabaseClient
         .from('dispatches')
         .select('*')
         .eq('server_id', state.serverId);
@@ -395,10 +376,10 @@ async function initializeDispatchListener() {
     }
 
     if (dispatchSubscription) {
-        supabase.removeChannel(dispatchSubscription);
+        window.supabaseClient.removeChannel(dispatchSubscription);
     }
 
-    dispatchSubscription = supabase
+    dispatchSubscription = window.supabaseClient
         .channel(`realtime-dispatches-${state.serverId}`)
         .on(
             'postgres_changes',
@@ -454,7 +435,8 @@ function renderDispatches(dispatches) {
 }
 
 async function clearDispatch(dispatchId) {
-    const { error } = await supabase
+    if (!window.supabaseClient) return;
+    const { error } = await window.supabaseClient
         .from('dispatches')
         .delete()
         .eq('id', dispatchId);
@@ -485,7 +467,6 @@ function showToast(message, type = 'info', duration = 3000) {
 
 function initializeEventListeners() {
     elements.loginBtn.addEventListener('click', () => {
-        // توجيه آمن يعتمد على الـ Client ID ومستوى الصلاحيات المطلوبة فقط دون الـ Secret
         const authUrl = `https://apis.roblox.com/oauth/v1/authorize?client_id=${ROBLOX_CLIENT_ID}&response_type=code&scope=openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
         window.location.href = authUrl;
     });
