@@ -510,6 +510,12 @@ function initializeAudioContext() {
 
 function playRadioClick() {
     if (!state.audioContext) return;
+    
+    // إعادة تفعيل الصوت إذا كان المتصفح قد وضعه في حالة الاستعداد (Suspended) بسبب سياسة الأمان
+    if (state.audioContext.state === 'suspended') {
+        state.audioContext.resume();
+    }
+    
     const osc = state.audioContext.createOscillator();
     const gain = state.audioContext.createGain();
     osc.connect(gain);
