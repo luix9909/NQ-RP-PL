@@ -42,24 +42,37 @@ const elements = {
 // ===== التهيئة =====
 // ===== التهيئة =====
 // ===== التهيئة =====
-document.addEventListener('DOMContentLoaded', () => {
-    // كود وهمي لتخطي تسجيل الدخول وتجربة الصوت فوراً
-    state.user = { id: 12345 };
-    state.robloxUserId = 1; 
-    state.userName = "سلمان_المطور";
-    state.userRank = "وزير الداخلية"; 
-    state.serverId = "TEST_SERVER_123"; 
-    state.isPolice = true;
-    
-    updateUI(); // يفتح لك لوحة التحكم والشات فوراً
-    
+// ===== دالة التهيئة الرسمية لتسجيل الدخول =====
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. تشغيل مستمعات الأحداث الأساسية بالموقع
     initializeEventListeners();
-    initializeAudioContext();
     
-    // تشغيل مستمع الشات التجريبي
-    if (window.supabaseClient) {
-        initializeChatListener();
-        initializeDispatchListener();
+    // 2. التحقق من جلسة تسجيل الدخول الحقيقية عبر روبلوكس
+    try {
+        // هنا الكود يستدعي سوبابيس أو السيرفر للتأكد من أن المستخدم مسجل دخول فعلياً
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        
+        if (session && session.user) {
+            // إذا كان مسجل دخول، نربط بياناته الحقيقية
+            state.user = session.user;
+            state.userName = session.user.user_metadata.full_name || "ضابط عمليات";
+            state.robloxUserId = session.user.user_metadata.provider_id;
+            state.isPolice = true; // أو حسب رتبته الحقيقية في السيرفر
+            
+            // فتح لوحة التحكم وتشغيل اللاسلكي الفعلي
+            updateUI();
+            initializeAudioContext();
+            initializeChatListener();
+            initializeDispatchListener();
+            
+            console.log("🔒 تم تسجيل الدخول رسميًا بحساب روبلوكس:", state.userName);
+        } else {
+            // إذا مش مسجل دخول، يرجعه لصفحة قفل تسجيل الدخول التلقائية
+            showLoginScreen();
+        }
+    } catch (err) {
+        console.error("خطأ أثناء التحقق من الجلسة:", err.message);
+        showLoginScreen();
     }
 });
 
