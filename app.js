@@ -530,11 +530,35 @@ function playRadioClick() {
 
 function announceToRadio(text) {
     if (!state.speechSynthesis) return;
+
+    // 1. إلغاء أي قراءة سابقة معلقة لمنع تعليق النظام الصوتي
+    state.speechSynthesis.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
+    
+    // 2. جلب جميع الأصوات المتاحة في جهازك واختيار صوت عربي متوافق
+    const voices = state.speechSynthesis.getVoices();
+    const arabicVoice = voices.find(voice => voice.lang.includes('ar'));
+    
+    if (arabicVoice) {
+        utterance.voice = arabicVoice;
+    }
+    
+    // 3. ضبط الإعدادات لضمان وضوح نطق الكلمات العربية
     utterance.lang = 'ar-SA';
-    utterance.rate = 1.1;
-    utterance.pitch = 0.9;
+    utterance.rate = 0.95; // سرعة نطق طبيعية ومفهومة باللاسلكي
+    utterance.pitch = 1.0;  // طبقة صوت واضحة
+
+    // 4. تشغيل نغمة اللاسلكي أولاً
     playRadioClick();
-    setTimeout(() => state.speechSynthesis.speak(utterance), 100);
-    utterance.onend = () => setTimeout(() => playRadioClick(), 50);
+    
+    // 5. النطق مباشرة بعد رشة اللاسلكي بـ 150 مللي ثانية فقط
+    setTimeout(() => {
+        state.speechSynthesis.speak(utterance);
+    }, 150);
+
+    // 6. تشغيل نغمة إنهاء اللاسلكي فور انتهاء النطق
+    utterance.onend = () => {
+        setTimeout(() => playRadioClick(), 100);
+    };
 }
