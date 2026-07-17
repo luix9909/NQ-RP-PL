@@ -40,11 +40,26 @@ const elements = {
 };
 
 // ===== التهيئة =====
+// ===== التهيئة =====
 document.addEventListener('DOMContentLoaded', () => {
-    checkUrlForAuthCode();
-    initializeAuth();
+    // كود وهمي لتخطي تسجيل الدخول وتجربة الصوت فوراً
+    state.user = { id: 12345 };
+    state.robloxUserId = 1; // حساب وهمي للتجربة
+    state.userName = "سلمان_المطور";
+    state.userRank = "وزير الداخلية"; // رتبة مصرحة
+    state.serverId = "TEST_SERVER_123"; // سيرفر وهمي
+    state.isPolice = true;
+    
+    updateUI(); // سيفتح لك الموقع والشات فوراً!
+    
     initializeEventListeners();
     initializeAudioContext();
+    
+    // تشغيل مستمع الشات الوهمي للتجربة المحلية إذا أردت
+    if (window.supabaseClient) {
+        initializeChatListener();
+        initializeDispatchListener();
+    }
 });
 
 // ===== 1. نظام المصادقة (Roblox OAuth) =====
