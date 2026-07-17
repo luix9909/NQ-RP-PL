@@ -307,8 +307,15 @@
     <!-- Toast Container -->
     <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Scripts -->
-    <script type="module" src="firebase-config.js"></script>
-    <script type="module" src="app.js"></script>
+    <!-- مكتبة Supabase الرسمية المضافة لتشغيل الأكواد -->
+<!-- الترتيب الصحيح والكامل للمشروع -->
+    <!-- 1. مكتبة Supabase أولاً لتوفير الدوال الأساسية -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 2. ملف الإعدادات ثانياً لتهيئة اتصال العميل بالـ URL والـ Key -->
+    <script src="config.js"></script>
+    
+    <!-- 3. ملف التطبيق الأساسي ثالثاً لتشغيل منطق الـ MDT -->
+    <script src="app.js"></script>
 </body>
 </html>
