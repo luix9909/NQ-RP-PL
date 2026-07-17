@@ -1,4 +1,11 @@
-
+// التحقق ما إذا كانت معرّفة مسبقاً لمنع الخطأ تماماً
+if (!window.supabase) {
+    const SUPABASE_URL = "https://oskelvbndtqvaxxfujhs.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9za2VsdmJuZHRxdmF4eGZ1amhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMjA5MDYsImV4cCI6MjA5OTc5NjkwNn0.qI_Khh_p1gNFHuwTZPuedqC6WmiWf2IzHWqchGL1yf4"; 
+    window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+// تعريف متغير محلي لتسهيل بقية الكود في الملف
+var supabase = window.supabase;
 // ===== إعدادات نظام الرتب المسموحة داخل اللعبة =====
 // ⚠️ اكتب هنا أسماء الرتب المسموح لها بدخول الموقع تماماً كما تظهر في روبلوكس
 const ALLOWED_IN_GAME_RANKS = ["رئيس الهيئة", "وزير الداخلية", "ضابط عمليات", "ملازم أول", "نقيب", "ملازم"]; 
