@@ -41,21 +41,22 @@ const elements = {
 
 // ===== التهيئة =====
 // ===== التهيئة =====
+// ===== التهيئة =====
 document.addEventListener('DOMContentLoaded', () => {
     // كود وهمي لتخطي تسجيل الدخول وتجربة الصوت فوراً
     state.user = { id: 12345 };
-    state.robloxUserId = 1; // حساب وهمي للتجربة
+    state.robloxUserId = 1; 
     state.userName = "سلمان_المطور";
-    state.userRank = "وزير الداخلية"; // رتبة مصرحة
-    state.serverId = "TEST_SERVER_123"; // سيرفر وهمي
+    state.userRank = "وزير الداخلية"; 
+    state.serverId = "TEST_SERVER_123"; 
     state.isPolice = true;
     
-    updateUI(); // سيفتح لك الموقع والشات فوراً!
+    updateUI(); // يفتح لك لوحة التحكم والشات فوراً
     
     initializeEventListeners();
     initializeAudioContext();
     
-    // تشغيل مستمع الشات الوهمي للتجربة المحلية إذا أردت
+    // تشغيل مستمع الشات التجريبي
     if (window.supabaseClient) {
         initializeChatListener();
         initializeDispatchListener();
