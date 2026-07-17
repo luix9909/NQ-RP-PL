@@ -254,31 +254,35 @@ async function listenForServerUpdates(userId) {
 // ===== 4. إدارة المحادثات =====
 let chatSubscription = null;
 
-async function initializeChatListener() {
-    if (!state.serverId || !window.supabaseClient) return;
+asyncfunction initializeChatListener() {
+    if (!window.supabaseClient) return;
 
-    const { data: messages, error } = await window.supabaseClient
-        .from('chat')
-        .select('*')
-        .eq('server_id', state.serverId)
-        .eq('frequency', state.currentFrequency)
-        .order('timestamp', { ascending: true });
-
-    if (!error && messages) {
-        const messagesObj = {};
-        messages.forEach(msg => {
-            messagesObj[msg.id] = {
-                robloxUserId: msg.roblox_user_id,
-                userName: msg.user_name,
-                rank: msg.rank,
-                team: msg.team,
-                frequency: msg.frequency,
-                content: msg.content,
-                timestamp: msg.timestamp
-            };
-        });
-        renderMessages(messagesObj);
+    if (state.chatSubscription) {
+        supabaseClient.removeChannel(state.chatSubscription);
     }
+
+    state.chatSubscription = supabaseClient
+        .channel('schema-db-changes')
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'chat',
+                filter: `server_id=eq.${state.serverId}`
+            },
+            (payload) => {
+                const newMsg = payload.new;
+                
+                // 1. إذا كانت دالة إضافة الرسالة للشاشة موجودة عندك استدعها هنا، مثل:
+                // if (typeof renderMessage === 'function') renderMessage(newMsg);
+                
+                // 2. 🚨 نطق محتوى الأمر (content) فقط وبالإنجليزية مباشرة بدون الاسم
+                announceToRadio(newMsg.content);
+            }
+        )
+        .subscribe();
+}
 
     if (chatSubscription) {
         window.supabaseClient.removeChannel(chatSubscription);
