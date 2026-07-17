@@ -547,33 +547,38 @@ function playRadioClick() {
 function announceToRadio(text) {
     if (!state.speechSynthesis) return;
 
-    // 1. إلغاء أي قراءة سابقة معلقة لمنع تعليق النظام الصوتي
+    // إلغاء أي نطق معلق لضمان استمرار العمل دائماً بدون تعليق
     state.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    // تحويل الأرقام أو الكلمات الشائعة تلقائياً لإنجليزية منطوقة بشكل صحيح
+    let englishText = text;
+    if (text.includes("١٠-٤") || text.includes("10-4")) englishText = "Ten Four";
+    if (text.includes("دعم") || text.includes("backup")) englishText = "Need Backup";
+
+    const utterance = new SpeechSynthesisUtterance(englishText);
     
-    // 2. جلب جميع الأصوات المتاحة في جهازك واختيار صوت عربي متوافق
+    // جلب صوت إنجليزي متوافق مع النظام
     const voices = state.speechSynthesis.getVoices();
-    const arabicVoice = voices.find(voice => voice.lang.includes('ar'));
+    const englishVoice = voices.find(voice => voice.lang.includes('en-US') && voice.name.includes('Google')) || 
+                        voices.find(voice => voice.lang.includes('en'));
     
-    if (arabicVoice) {
-        utterance.voice = arabicVoice;
+    if (englishVoice) {
+        utterance.voice = englishVoice;
     }
     
-    // 3. ضبط الإعدادات لضمان وضوح نطق الكلمات العربية
-    utterance.lang = 'ar-SA';
-    utterance.rate = 0.95; // سرعة نطق طبيعية ومفهومة باللاسلكي
-    utterance.pitch = 1.0;  // طبقة صوت واضحة
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0;  // سرعة نطق طبيعية وعسكرية
+    utterance.pitch = 0.9; // طبقة صوت خشنة ومناسبة للاسلكي
 
-    // 4. تشغيل نغمة اللاسلكي أولاً
+    // تشغيل نغمة اللاسلكي (الفتح)
     playRadioClick();
     
-    // 5. النطق مباشرة بعد رشة اللاسلكي بـ 150 مللي ثانية فقط
+    // النطق الفوري للأمر بعد رشة اللاسلكي
     setTimeout(() => {
         state.speechSynthesis.speak(utterance);
     }, 150);
 
-    // 6. تشغيل نغمة إنهاء اللاسلكي فور انتهاء النطق
+    // تشغيل نغمة اللاسلكي (الإغلاق) فور انتهاء النطق
     utterance.onend = () => {
         setTimeout(() => playRadioClick(), 100);
     };
