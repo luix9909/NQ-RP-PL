@@ -1,11 +1,24 @@
-import { 
-    database, auth, ref, onValue, push, set, remove, update,
-    signInWithPopup, onAuthStateChanged, signOut 
-} from './firebase-config.js';
+// ============================================================================
+// 1. إعدادات الاتصال والتهيئة بـ Supabase (بديل Firebase)
+// ============================================================================
+const SUPABASE_URL = "https://oskelvbndtqvaxxfujhs.supabase.co";
+// ⚠️ ضع هنا الـ anon (public) key الطويل الذي نسخته من لوحة تحكم Supabase الخاصة بك
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9za2VsdmJuZHRxdmF4eGZ1amhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMjA5MDYsImV4cCI6MjA5OTc5NjkwNn0.qI_Khh_p1gNFHuwTZPuedqC6WmiWf2IzHWqchGL1yf4"; 
 
-// ===== State Management =====
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ===== إعدادات نظام الرتب المسموحة داخل اللعبة =====
+// ⚠️ اكتب هنا أسماء الرتب المسموح لها بدخول الموقع تماماً كما تظهر في روبلوكس
+const ALLOWED_IN_GAME_RANKS = ["رئيس الهيئة", "وزير الداخلية", "ضابط عمليات", "ملازم أول", "نقيب", "ملازم"]; 
+
+// ⚠️ تم التحديث بـ Client ID الجديد الخاص بك من لوحة تحكم روبلوكس
+const ROBLOX_CLIENT_ID = "2210294996016219388";
+const REDIRECT_URI = window.location.origin; // رابط موقعك الحالي (محلياً أو على GitHub Pages)
+
+// ===== حالة النظام =====
 const state = {
     user: null,
+    robloxUserId: null,
     currentFrequency: 1,
     serverId: null,
     isPolice: false,
@@ -13,12 +26,10 @@ const state = {
     userRank: null,
     userTeam: null,
     audioContext: null,
-    speechSynthesis: window.speechSynthesis,
-    messages: [],
-    dispatches: []
+    speechSynthesis: window.speechSynthesis
 };
 
-// ===== DOM Elements =====
+// ===== عناصر واجهة المستخدم =====
 const elements = {
     loginBtn: document.getElementById('loginBtn'),
     authSection: document.getElementById('authSection'),
@@ -38,170 +49,122 @@ const elements = {
     toastContainer: document.getElementById('toastContainer')
 };
 
-// ===== Configuration =====
-const ROBLOX_GROUP_ID = 12345678; // Replace with your group ID
-const POLICE_TEAM_RANKS = [250, 251, 252, 253, 254, 255];
-
-// ===== Initialization =====
+// ===== التهيئة =====
 document.addEventListener('DOMContentLoaded', () => {
+    checkUrlForAuthCode();
     initializeAuth();
     initializeEventListeners();
     initializeAudioContext();
-    initializeParticles();
-    showToast('System initialized', 'info');
 });
 
-// ===== Particles Animation =====
-function initializeParticles() {
-    const particles = document.querySelector('.particles');
-    if (!particles) return;
-
-    // Create floating particles
-    for (let i = 0; i < 50; i++) {
-        const particle = document.createElement('div');
-        particle.style.cssText = `
-            position: absolute;
-            width: ${Math.random() * 3 + 1}px;
-            height: ${Math.random() * 3 + 1}px;
-            background: rgba(0, 212, 255, ${Math.random() * 0.5 + 0.2});
-            border-radius: 50%;
-            top: ${Math.random() * 100}%;
-            left: ${Math.random() * 100}%;
-            animation: particleFloat ${Math.random() * 20 + 10}s linear infinite;
-            pointer-events: none;
-        `;
-        particles.appendChild(particle);
+// ===== 1. نظام المصادقة (Roblox OAuth) =====
+function checkUrlForAuthCode() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+        // إزالة الكود من الرابط لمنع التكرار
+        window.history.replaceState({}, document.title, window.location.pathname);
+        exchangeCodeForToken(code);
     }
-
-    // Add particle animation
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes particleFloat {
-            0% { transform: translate(0, 0) scale(1); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px) scale(0); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
 }
 
-// ===== Toast Notifications =====
-function showToast(message, type = 'info', duration = 3000) {
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.textContent = message;
+async function exchangeCodeForToken(code) {
+    showToast('جاري التحقق من حساب روبلوكس...', 'info');
     
-    elements.toastContainer.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
-}
-
-// ===== Authentication =====
-function initializeAuth() {
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            state.user = user;
-            showToast('Welcome back, Officer!', 'success');
-            await checkUserPermissions(user);
-        } else {
-            state.user = null;
-            state.isPolice = false;
-            updateUI();
-        }
-    });
-}
-
-async function checkUserPermissions(user) {
     try {
-        const robloxUserId = user.providerData[0]?.uid;
+        // تم تهيئة الطلب ليتوافق مع Public Client (بدون الحاجة للـ Client Secret) لحمايتك
+        const response = await fetch(`https://apis.roblox.com/oauth/v1/token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                code: code,
+                client_id: ROBLOX_CLIENT_ID,
+                redirect_uri: REDIRECT_URI
+            })
+        });
         
-        if (!robloxUserId) {
-            showToast('Authentication error', 'error');
-            return;
-        }
-
-        // Fetch user data (mock for demo)
-        const userData = await fetchRobloxUserData(robloxUserId);
-        const groupData = await fetchRobloxGroupData(robloxUserId);
-
-        state.userName = userData.name;
-        state.userRank = groupData.role?.name || 'Guest';
-        
-        const rankId = groupData.role?.rank || 0;
-        state.isPolice = POLICE_TEAM_RANKS.includes(rankId);
-
-        const avatarUrl = await fetchRobloxAvatar(robloxUserId);
-        elements.userAvatar.src = avatarUrl;
-
-        listenForServerUpdates(robloxUserId);
-        updateUI();
-
-        if (state.isPolice) {
-            showToast('Access granted - Police MDT active', 'success');
+        const data = await response.json();
+        if (data.access_token) {
+            await verifyRobloxUser(data.access_token);
         } else {
-            showToast('Access denied - Not authorized', 'error');
+            throw new Error('فشل الحصول على رمز الوصول');
         }
     } catch (error) {
-        console.error('Permission check error:', error);
-        showToast('Failed to verify permissions', 'error');
+        console.error('OAuth Error:', error);
+        showToast('فشل تسجيل الدخول. تأكد من إعدادات OAuth في روبلوكس والروابط.', 'error');
     }
 }
 
-async function fetchRobloxUserData(userId) {
-    // Mock implementation - replace with actual API call
-    return { name: 'Officer_' + userId.substring(0, 6) };
+async function verifyRobloxUser(accessToken) {
+    try {
+        const response = await fetch('https://users.roblox.com/v1/users/authenticated', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        const userData = await response.json();
+        
+        state.robloxUserId = userData.id;
+        state.userName = userData.name;
+        
+        // التحقق من الرتبة في اللعبة والربط مع الـ Database مباشرة
+        await setupSupabaseAuth(userData.id, userData.name);
+    } catch (error) {
+        console.error('Verification Error:', error);
+        showToast('فشل التحقق من بيانات روبلوكس', 'error');
+    }
 }
 
-async function fetchRobloxGroupData(userId) {
-    // Mock implementation
-    return { role: { name: 'State Trooper', rank: 252 } };
-}
-
-async function fetchRobloxAvatar(userId) {
-    // Mock implementation
-    return `https://www.roblox.com/headshot-thumbnail/image?userId=${userId}&width=150&height=150&format=png`;
-}
-
-function listenForServerUpdates(userId) {
-    const sessionRef = ref(database, `sessions/${userId}`);
-    onValue(sessionRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            state.serverId = data.jobId;
-            state.userTeam = data.team;
-            elements.serverId.innerHTML = `<span class="server-id-text">${state.serverId}</span>`;
-            updateUI();
-            
-            if (state.isPolice && state.serverId) {
-                initializeChatListener();
-                initializeDispatchListener();
-            }
+async function setupSupabaseAuth(userId, name) {
+    const sessionData = {
+        id: userId,
+        email: `${userId}@roblox.placeholder.com`,
+        user_metadata: { displayName: name }
+    };
+    
+    try {
+        state.user = sessionData;
+        showToast(`مرحباً بك، ${name}! جاري البحث عن جلستك في اللعبة...`, 'success');
+        
+        if (state.robloxUserId) {
+            await listenForServerUpdates(state.robloxUserId);
         }
-    });
+    } catch (error) {
+        console.error('Supabase Setup Error:', error);
+    }
 }
 
-// ===== UI Updates =====
+function initializeAuth() {
+    const cachedUser = state.user;
+    if (cachedUser) {
+        updateUI();
+        if (state.robloxUserId) {
+            listenForServerUpdates(state.robloxUserId);
+        }
+    } else {
+        state.user = null;
+        state.isPolice = false;
+        updateUI();
+    }
+}
+
+// ===== 2. تحديث واجهة المستخدم =====
 function updateUI() {
     const isLoggedIn = !!state.user;
     const hasAccess = isLoggedIn && state.isPolice && state.serverId;
 
-    // Auth section
     if (isLoggedIn) {
         elements.authSection.classList.add('hidden');
         elements.userSection.classList.remove('hidden');
-        elements.userName.textContent = state.userName || 'Unknown';
-        elements.userRank.textContent = state.userRank || 'Unknown';
-        elements.userTeam.textContent = state.userTeam || 'Not in game';
+        elements.userName.textContent = state.userName || 'مستخدم';
+        elements.userRank.textContent = state.userRank || 'في انتظار دخولك للسيرفر';
+        elements.userTeam.textContent = state.userTeam || 'خارج اللعبة';
+        elements.userAvatar.src = `https://www.roblox.com/headshot-thumbnail/image?userId=${state.robloxUserId}&width=150&height=150&format=png`;
     } else {
         elements.authSection.classList.remove('hidden');
         elements.userSection.classList.add('hidden');
     }
 
-    // Chat access
     if (hasAccess) {
         elements.lockOverlay.classList.add('hidden');
         elements.chatInput.disabled = false;
@@ -209,9 +172,11 @@ function updateUI() {
         elements.chatStatus.innerHTML = `
             <span class="status-indicator">
                 <span class="status-dot online"></span>
-                <span class="status-text online">ONLINE</span>
+                <span class="status-text">متصل</span>
             </span>
         `;
+        initializeChatListener();
+        initializeDispatchListener();
     } else {
         elements.lockOverlay.classList.remove('hidden');
         elements.chatInput.disabled = true;
@@ -219,94 +184,128 @@ function updateUI() {
         elements.chatStatus.innerHTML = `
             <span class="status-indicator">
                 <span class="status-dot"></span>
-                <span class="status-text">LOCKED</span>
+                <span class="status-text">${isLoggedIn ? 'ادخل السيرفر برتبة مصرحة' : 'يرجى تسجيل الدخول'}</span>
             </span>
         `;
     }
 }
 
-// ===== Event Listeners =====
-function initializeEventListeners() {
-    elements.loginBtn.addEventListener('click', handleLogin);
+// ===== 3. الاستماع لتحديثات اللعبة والتحقق من رتبة اللعبة الممررة =====
+let sessionSubscription = null;
 
-    // Frequency buttons with animation
-    document.querySelectorAll('.freq-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const freq = parseInt(e.currentTarget.dataset.freq);
-            switchFrequency(freq);
-            
-            // Add click animation
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                btn.style.transform = '';
-            }, 150);
-        });
-    });
+async function listenForServerUpdates(userId) {
+    // 1. جلب بيانات السيرفر الحالية للاعب عند التحميل الأول
+    const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    // Chat
-    elements.sendBtn.addEventListener('click', sendMessage);
-    elements.chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-
-    // Quick commands with animation
-    document.querySelectorAll('.cmd-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const cmd = e.currentTarget.dataset.cmd;
-            
-            // Add click animation
-            btn.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                btn.style.transform = '';
-            }, 150);
-            
-            sendQuickCommand(cmd);
-        });
-    });
-}
-
-async function handleLogin() {
-    try {
-        showToast('Connecting to Roblox...', 'info');
-        // Implement actual Roblox OAuth
-        // const provider = new OAuthProvider('roblox.com');
-        // await signInWithPopup(auth, provider);
-        showToast('Login system requires backend configuration', 'info');
-    } catch (error) {
-        console.error('Login error:', error);
-        showToast('Login failed', 'error');
+    if (!error && data) {
+        state.serverId = data.jobId;
+        state.userTeam = data.team;
+        state.userRank = data.rank_name; // الرتبة التي أرسلها سكربت اللعبة المحدث
+        
+        // التحقق من أن الرتبة تقع ضمن الرتب المسموحة التي حددتها بالأعلى
+        state.isPolice = ALLOWED_IN_GAME_RANKS.includes(state.userRank);
+        
+        elements.serverId.textContent = state.serverId || 'غير متصل';
+        updateUI();
+    } else {
+        // إذا لم يكن باللعبة
+        state.isPolice = false;
+        state.userRank = "خارج اللعبة";
+        updateUI();
     }
-}
 
-// ===== Frequency Management =====
-function switchFrequency(freq) {
-    state.currentFrequency = freq;
-    
-    document.querySelectorAll('.freq-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    document.querySelector(`[data-freq="${freq}"]`).classList.add('active');
-
-    playRadioClick();
-
-    const freqNames = { 1: 'PATROL', 2: 'SWAT', 3: 'AIR SUPPORT' };
-    showToast(`Switched to Wave ${freq} - ${freqNames[freq]}`, 'info');
-    announceToRadio(`Switching to Wave ${freq} - ${freqNames[freq]}`);
-
-    // Reinitialize chat listener for new frequency
-    if (state.isPolice && state.serverId) {
-        initializeChatListener();
+    // 2. إلغاء أي اشتراك قديم لتفادي التكرار
+    if (sessionSubscription) {
+        supabase.removeChannel(sessionSubscription);
     }
+
+    // 3. بدء الاستماع الحي لتحديث رتبة وفريق وجلسة اللاعب فوراً أثناء تواجده بالسيرفر
+    sessionSubscription = supabase
+        .channel(`realtime-sessions-${userId}`)
+        .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'sessions', filter: `user_id=eq.${userId}` },
+            (payload) => {
+                const updatedData = payload.new;
+                if (updatedData) {
+                    state.serverId = updatedData.jobId;
+                    state.userTeam = updatedData.team;
+                    state.userRank = updatedData.rank_name;
+                    
+                    // التحقق من الرتبة في اللعبة فور حدوث أي تحديث تلقائي
+                    state.isPolice = ALLOWED_IN_GAME_RANKS.includes(state.userRank);
+                    
+                    elements.serverId.textContent = state.serverId || 'غير متصل';
+                    updateUI();
+                } else {
+                    // في حال الخروج (Delete session)
+                    state.serverId = null;
+                    state.userTeam = "Neutral";
+                    state.userRank = "خارج اللعبة";
+                    state.isPolice = false;
+                    elements.serverId.textContent = 'غير متصل';
+                    updateUI();
+                }
+            }
+        )
+        .subscribe();
 }
 
-// ===== Chat System =====
-function initializeChatListener() {
-    const chatRef = ref(database, `chat/${state.serverId}/${state.currentFrequency}`);
-    
-    onValue(chatRef, (snapshot) => {
-        const messages = snapshot.val();
-        renderMessages(messages || {});
-    });
+// ===== 4. إدارة المحادثات (جدول chat في Supabase) =====
+let chatSubscription = null;
+
+async function initializeChatListener() {
+    if (!state.serverId) return;
+
+    const { data: messages, error } = await supabase
+        .from('chat')
+        .select('*')
+        .eq('server_id', state.serverId)
+        .eq('frequency', state.currentFrequency)
+        .order('timestamp', { ascending: true });
+
+    if (!error && messages) {
+        const messagesObj = {};
+        messages.forEach(msg => {
+            messagesObj[msg.id] = {
+                robloxUserId: msg.roblox_user_id,
+                userName: msg.user_name,
+                rank: msg.rank,
+                team: msg.team,
+                frequency: msg.frequency,
+                content: msg.content,
+                timestamp: msg.timestamp
+            };
+        });
+        renderMessages(messagesObj);
+    }
+
+    if (chatSubscription) {
+        supabase.removeChannel(chatSubscription);
+    }
+
+    chatSubscription = supabase
+        .channel(`realtime-chat-${state.serverId}-${state.currentFrequency}`)
+        .on(
+            'postgres_changes',
+            { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'chat', 
+                filter: `server_id=eq.${state.serverId}` 
+            },
+            (payload) => {
+                const newMsg = payload.new;
+                if (newMsg && parseInt(newMsg.frequency) === parseInt(state.currentFrequency)) {
+                    initializeChatListener();
+                }
+            }
+        )
+        .subscribe();
 }
 
 function renderMessages(messages) {
@@ -318,12 +317,12 @@ function renderMessages(messages) {
     if (sortedMessages.length === 0) {
         elements.chatMessages.innerHTML = `
             <div class="system-message">
-                <svg class="system-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="system-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="12" y1="16" x2="12" y2="12"/>
                     <line x1="12" y1="8" x2="12.01" y2="8"/>
                 </svg>
-                <span>No messages yet</span>
+                <span>لا توجد رسائل حالياً</span>
             </div>
         `;
         return;
@@ -333,13 +332,12 @@ function renderMessages(messages) {
         const messageEl = document.createElement('div');
         messageEl.className = 'chat-message';
         messageEl.innerHTML = `
-            <div class="meta">[Wave ${msg.frequency}] [${msg.rank}] ${msg.userName}</div>
+            <div class="meta">[موجة ${msg.frequency}] [${msg.rank}] ${msg.userName}</div>
             <div class="content">${escapeHtml(msg.content)}</div>
         `;
         elements.chatMessages.appendChild(messageEl);
 
-        // Announce new messages
-        if (msg.timestamp > Date.now() - 5000 && msg.userId !== state.user?.uid) {
+        if (msg.timestamp > Date.now() - 5000 && msg.robloxUserId !== state.robloxUserId) {
             announceToRadio(msg.content);
         }
     });
@@ -351,46 +349,71 @@ async function sendMessage() {
     const content = elements.chatInput.value.trim();
     if (!content || !state.isPolice || !state.serverId) return;
 
-    const messageRef = push(ref(database, `chat/${state.serverId}/${state.currentFrequency}`));
-    
-    await set(messageRef, {
-        userId: state.user.uid,
-        userName: state.userName,
-        rank: state.userRank,
-        team: state.userTeam,
-        frequency: state.currentFrequency,
-        content: content,
-        timestamp: Date.now()
-    });
+    const { error } = await supabase
+        .from('chat')
+        .insert([
+            {
+                server_id: state.serverId,
+                roblox_user_id: state.robloxUserId,
+                user_name: state.userName,
+                rank: state.userRank,
+                team: state.userTeam,
+                frequency: state.currentFrequency,
+                content: content,
+                timestamp: Date.now()
+            }
+        ]);
 
-    elements.chatInput.value = '';
-    showToast('Message sent', 'success');
+    if (error) {
+        console.error('Error sending message:', error);
+        showToast('فشل في إرسال الرسالة', 'error');
+    } else {
+        elements.chatInput.value = '';
+    }
 }
 
-async function sendQuickCommand(cmd) {
-    const commands = {
-        'DISPATCH': 'Dispatch, Unit standing by',
-        '10-4': 'Roger that, 10-4',
-        'BACKUP': 'Officer needs backup!',
-        'SUSPECT FLEEING': 'Suspect is fleeing the scene!',
-        'CODE 4': 'Code 4, situation under control'
-    };
+// ===== 5. إدارة البلاغات (جدول dispatches في Supabase) =====
+let dispatchSubscription = null;
 
-    const message = commands[cmd];
-    if (!message) return;
+async function initializeDispatchListener() {
+    if (!state.serverId) return;
 
-    elements.chatInput.value = message;
-    await sendMessage();
-}
+    const { data: dispatches, error } = await supabase
+        .from('dispatches')
+        .select('*')
+        .eq('server_id', state.serverId);
 
-// ===== Dispatch System =====
-function initializeDispatchListener() {
-    const dispatchRef = ref(database, `dispatches/${state.serverId}`);
-    
-    onValue(dispatchRef, (snapshot) => {
-        const dispatches = snapshot.val();
-        renderDispatches(dispatches || {});
-    });
+    if (!error && dispatches) {
+        const dispatchesObj = {};
+        dispatches.forEach(disp => {
+            dispatchesObj[disp.id] = {
+                caller: disp.caller,
+                type: disp.type,
+                location: disp.location
+            };
+        });
+        renderDispatches(dispatchesObj);
+    }
+
+    if (dispatchSubscription) {
+        supabase.removeChannel(dispatchSubscription);
+    }
+
+    dispatchSubscription = supabase
+        .channel(`realtime-dispatches-${state.serverId}`)
+        .on(
+            'postgres_changes',
+            { 
+                event: '*', 
+                schema: 'public', 
+                table: 'dispatches', 
+                filter: `server_id=eq.${state.serverId}` 
+            },
+            () => {
+                initializeDispatchListener();
+            }
+        )
+        .subscribe();
 }
 
 function renderDispatches(dispatches) {
@@ -400,12 +423,12 @@ function renderDispatches(dispatches) {
     if (dispatchArray.length === 0) {
         elements.dispatchList.innerHTML = `
             <div class="empty-state">
-                <svg class="empty-icon" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <svg class="empty-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                     <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
-                <p class="empty-text">No active dispatches</p>
-                <p class="empty-subtext">All units standing by</p>
+                <p class="empty-text">لا توجد بلاغات نشطة</p>
+                <p class="empty-subtext">جميع الوحدات في وضع الاستعداد</p>
             </div>
         `;
         return;
@@ -419,12 +442,12 @@ function renderDispatches(dispatches) {
             <div class="caller">📞 ${escapeHtml(dispatch.caller)}</div>
             <div class="type">🚨 ${escapeHtml(dispatch.type)}</div>
             <div class="location">📍 ${escapeHtml(dispatch.location)}</div>
-            <button class="btn-clear" data-id="${id}">CLEAR DISPATCH</button>
+            <button class="btn-clear" data-id="${id}">إنهاء البلاغ</button>
         `;
         
         card.querySelector('.btn-clear').addEventListener('click', () => {
             clearDispatch(id);
-            showToast('Dispatch cleared', 'success');
+            showToast('تم إنهاء البلاغ بنجاح', 'success');
         });
 
         elements.dispatchList.appendChild(card);
@@ -432,60 +455,100 @@ function renderDispatches(dispatches) {
 }
 
 async function clearDispatch(dispatchId) {
-    const dispatchRef = ref(database, `dispatches/${state.serverId}/${dispatchId}`);
-    await remove(dispatchRef);
-}
+    const { error } = await supabase
+        .from('dispatches')
+        .delete()
+        .eq('id', dispatchId);
 
-// ===== Audio System =====
-function initializeAudioContext() {
-    try {
-        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    } catch (error) {
-        console.warn('Web Audio API not supported');
+    if (error) {
+        console.error('Error deleting dispatch:', error);
+        showToast('فشل في إنهاء البلاغ', 'error');
     }
 }
 
-function playRadioClick() {
-    if (!state.audioContext) return;
-
-    const oscillator = state.audioContext.createOscillator();
-    const gainNode = state.audioContext.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(state.audioContext.destination);
-
-    oscillator.frequency.value = 1200;
-    oscillator.type = 'square';
-
-    gainNode.gain.setValueAtTime(0.2, state.audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.08);
-
-    oscillator.start(state.audioContext.currentTime);
-    oscillator.stop(state.audioContext.currentTime + 0.08);
-}
-
-function announceToRadio(text) {
-    if (!state.speechSynthesis) return;
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.1;
-    utterance.pitch = 0.9;
-    utterance.volume = 0.8;
-
-    playRadioClick();
-    
-    setTimeout(() => {
-        state.speechSynthesis.speak(utterance);
-    }, 100);
-
-    utterance.onend = () => {
-        setTimeout(() => playRadioClick(), 50);
-    };
-}
-
-// ===== Utilities =====
+// ===== 6. أدوات مساعدة =====
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function showToast(message, type = 'info', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    elements.toastContainer.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'toastSlideIn 0.3s ease-out reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+function initializeEventListeners() {
+    elements.loginBtn.addEventListener('click', () => {
+        // توجيه آمن يعتمد على الـ Client ID ومستوى الصلاحيات المطلوبة فقط دون الـ Secret
+        const authUrl = `https://apis.roblox.com/oauth/v1/authorize?client_id=${ROBLOX_CLIENT_ID}&response_type=code&scope=openid+profile&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+        window.location.href = authUrl;
+    });
+
+    document.querySelectorAll('.freq-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            state.currentFrequency = parseInt(e.currentTarget.dataset.freq);
+            document.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            playRadioClick();
+            showToast(`تم التبديل إلى الموجة ${state.currentFrequency}`, 'info');
+            if (state.isPolice && state.serverId) initializeChatListener();
+        });
+    });
+
+    elements.sendBtn.addEventListener('click', sendMessage);
+    elements.chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    document.querySelectorAll('.cmd-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const commands = {
+                'DISPATCH': 'الإرسال، الوحدة جاهزة للاستقبال',
+                '10-4': '١٠-٤، تم الفهم',
+                'BACKUP': 'طلب دعم فوري! ضابط بحاجة لمساعدة',
+                'SUSPECT FLEEING': 'المشتبه به يهرب من الموقع!',
+                'CODE 4': 'كود ٤، الوضع تحت السيطرة'
+            };
+            elements.chatInput.value = commands[btn.dataset.cmd];
+            sendMessage();
+        });
+    });
+}
+
+function initializeAudioContext() {
+    try {
+        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) { console.warn('Web Audio API not supported'); }
+}
+
+function playRadioClick() {
+    if (!state.audioContext) return;
+    const osc = state.audioContext.createOscillator();
+    const gain = state.audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(state.audioContext.destination);
+    osc.frequency.value = 1200;
+    osc.type = 'square';
+    gain.gain.setValueAtTime(0.2, state.audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, state.audioContext.currentTime + 0.08);
+    osc.start(state.audioContext.currentTime);
+    osc.stop(state.audioContext.currentTime + 0.08);
+}
+
+function announceToRadio(text) {
+    if (!state.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ar-SA';
+    utterance.rate = 1.1;
+    utterance.pitch = 0.9;
+    playRadioClick();
+    setTimeout(() => state.speechSynthesis.speak(utterance), 100);
+    utterance.onend = () => setTimeout(() => playRadioClick(), 50);
 }
