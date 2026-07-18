@@ -6,63 +6,98 @@
   <title>NQ PL RP — سياسة الخصوصية</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg:#0f1419; --card:#1a1f2e; --input:#1e2433;
-      --border:#2d3548; --gold:#c9a961; --blue:#1e4080;
-      --green:#48bb78; --t:#fff; --td:#9ca3af; --tm:#6b7280;
-    }
+    :root{--bg:#0f1419;--card:#1a1f2e;--input:#1e2433;--border:#2d3548;--gold:#c9a961;--blue:#1e4080;--green:#48bb78;--t:#fff;--td:#9ca3af;--tm:#6b7280}
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:var(--bg);color:var(--t);font-family:'Cairo',sans-serif;min-height:100dvh;display:flex;flex-direction:column}
-    ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:var(--card)} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--card)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 
-    header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--card);border-bottom:2px solid var(--gold)}
-    .logo{display:flex;align-items:center;gap:12px}
-    .shield{font-size:28px}
-    .logo-text h1{color:var(--gold);font-size:20px;font-weight:900;letter-spacing:3px;line-height:1}
-    .logo-text p{color:var(--td);font-size:11px;margin-top:2px}
-    nav a{color:var(--td);text-decoration:none;font-size:13px;font-weight:600;margin-right:20px;transition:color .2s}
-    nav a:hover{color:var(--gold)}
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--card);border-bottom:2px solid var(--gold);position:sticky;top:0;z-index:100;gap:12px}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+    .logo-text h1{color:var(--gold);font-size:18px;font-weight:900;letter-spacing:2px;line-height:1}
+    .logo-text p{color:var(--td);font-size:10px;margin-top:2px}
+    nav{display:flex;align-items:center;gap:6px}
+    nav a{color:var(--td);text-decoration:none;font-size:13px;font-weight:600;padding:6px 10px;border-radius:6px;transition:all .2s;white-space:nowrap}
+    nav a:hover{color:var(--gold);background:rgba(201,169,97,.08)}
+    .btn-roblox{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;background:var(--gold);color:#0f1419;border:none;border-radius:7px;font-family:'Cairo',sans-serif;font-size:13px;font-weight:900;cursor:pointer;text-decoration:none;transition:opacity .2s;white-space:nowrap;flex-shrink:0}
+    .btn-roblox:hover{opacity:.85}
+    .btn-roblox svg{width:16px;height:16px;fill:#0f1419;flex-shrink:0}
 
-    .page-hero{background:var(--card);border-bottom:1px solid var(--border);padding:36px 28px;text-align:center}
+    .hamburger{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:4px;background:none;border:none}
+    .hamburger span{display:block;width:22px;height:2px;background:var(--gold);border-radius:2px;transition:all .25s}
+    .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(4px,4px)}
+    .hamburger.open span:nth-child(2){opacity:0}
+    .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(4px,-4px)}
+    .mobile-nav{display:none;flex-direction:column;gap:4px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border)}
+    .mobile-nav.open{display:flex}
+
+    .page-hero{background:var(--card);border-bottom:1px solid var(--border);padding:36px 24px;text-align:center}
     .page-hero .tag{display:inline-flex;align-items:center;gap:6px;background:rgba(201,169,97,.1);border:1px solid rgba(201,169,97,.25);padding:4px 14px;border-radius:9999px;font-size:11px;color:var(--gold);font-weight:700;margin-bottom:14px}
-    .page-hero h2{font-size:28px;font-weight:900;color:var(--gold)}
+    .page-hero h2{font-size:clamp(20px,4vw,28px);font-weight:900;color:var(--gold)}
     .page-hero p{color:var(--td);font-size:13px;margin-top:8px}
 
-    main{flex:1;max-width:800px;margin:40px auto;padding:0 24px 60px;width:100%}
-
-    .section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:28px;margin-bottom:20px;border-right:3px solid var(--gold)}
-    .section h3{color:var(--gold);font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    main{flex:1;max-width:800px;margin:32px auto;padding:0 20px 60px;width:100%}
+    .section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:16px;border-right:3px solid var(--gold)}
+    .section h3{color:var(--gold);font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
     .section p,.section li{color:var(--td);font-size:14px;line-height:1.9}
-    .section ul{padding-right:20px;margin-top:8px}
-    .section ul li{margin-bottom:6px;position:relative}
-    .section ul li::before{content:'◆';color:var(--gold);font-size:8px;margin-left:8px}
-    .highlight{background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.2);border-radius:8px;padding:14px 18px;margin-top:12px;font-size:13px;color:var(--td);line-height:1.8}
+    .section ul{padding-right:20px;margin-top:8px;list-style:none}
+    .section ul li{margin-bottom:6px;padding-right:16px;position:relative}
+    .section ul li::before{content:'◆';color:var(--gold);font-size:8px;position:absolute;right:0;top:6px}
+    .highlight{background:rgba(201,169,97,.08);border:1px solid rgba(201,169,97,.2);border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;color:var(--td);line-height:1.8}
     .highlight strong{color:var(--gold)}
+    .last-update{text-align:center;color:var(--tm);font-size:12px;margin-bottom:24px}
 
-    .last-update{text-align:center;color:var(--tm);font-size:12px;margin-bottom:28px}
-
-    footer{background:var(--card);border-top:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    footer{background:var(--card);border-top:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
     footer p{font-size:12px;color:var(--td)}
-    footer a{color:var(--gold);text-decoration:none;font-size:12px;margin-right:16px}
+    footer a{color:var(--gold);text-decoration:none;font-size:12px;margin-right:14px}
     footer a:hover{text-decoration:underline}
+
+    @media(max-width:768px){
+      header{padding:10px 16px}
+      nav{display:none}
+      .hamburger{display:flex}
+      .page-hero{padding:28px 16px}
+      main{margin:20px auto;padding:0 16px 40px}
+      .section{padding:18px 16px}
+      footer{justify-content:center;text-align:center}
+    }
+    @media(max-width:480px){
+      .logo-text p{display:none}
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">
-    <span class="shield">🛡️</span>
+  <a class="logo" href="entry.html">
+    <span style="font-size:26px">🛡️</span>
     <div class="logo-text">
       <h1>NQ PL RP</h1>
       <p>نظام الشرطة المتنقل</p>
     </div>
-  </div>
+  </a>
   <nav>
     <a href="entry.html">الرئيسية</a>
     <a href="https://luix9909.github.io/NQ-RP-PL/" target="_blank">MDT</a>
     <a href="terms.html">شروط الاستخدام</a>
+    <a class="btn-roblox" href="https://luix9909.github.io/NQ-RP-PL/" target="_blank">
+      <svg viewBox="0 0 512 512"><path d="M117 0L0 395l395 117L512 117zm228 290l-117-35 35-117 117 35z"/></svg>
+      دخول عبر Roblox
+    </a>
   </nav>
+  <button class="hamburger" id="ham" onclick="toggleMenu()" aria-label="القائمة">
+    <span></span><span></span><span></span>
+  </button>
 </header>
+
+<div class="mobile-nav" id="mobileNav">
+  <a href="entry.html">الرئيسية</a>
+  <a href="https://luix9909.github.io/NQ-RP-PL/" target="_blank">MDT</a>
+  <a href="terms.html">شروط الاستخدام</a>
+  <a class="btn-roblox" href="https://luix9909.github.io/NQ-RP-PL/" target="_blank" style="justify-content:center">
+    <svg viewBox="0 0 512 512" style="width:16px;height:16px;fill:#0f1419"><path d="M117 0L0 395l395 117L512 117zm228 290l-117-35 35-117 117 35z"/></svg>
+    دخول عبر Roblox
+  </a>
+</div>
 
 <div class="page-hero">
   <div class="tag">🔒 وثيقة رسمية</div>
@@ -75,10 +110,7 @@
 
   <div class="section">
     <h3>📋 مقدمة</h3>
-    <p>
-      مرحباً بك في نظام الشرطة المتنقل الخاص بـ NQ PL RP. نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية.
-      تصف هذه السياسة كيفية جمع معلوماتك واستخدامها عند تسجيل دخولك عبر حساب Roblox أو استخدامك للنظام.
-    </p>
+    <p>مرحباً بك في نظام الشرطة المتنقل الخاص بـ NQ PL RP. نحن نحترم خصوصيتك ونلتزم بحماية بياناتك الشخصية. تصف هذه السياسة كيفية جمع معلوماتك واستخدامها عند تسجيل دخولك عبر حساب Roblox أو استخدامك للنظام.</p>
   </div>
 
   <div class="section">
@@ -104,25 +136,17 @@
       <li>إدارة البلاغات وتوزيعها على الوحدات المناسبة</li>
       <li>تحسين أداء النظام وتجربة المستخدم</li>
     </ul>
-    <div class="highlight">
-      <strong>تأكيد:</strong> لا نبيع بياناتك، ولا نشاركها مع أطراف ثالثة خارج إدارة NQ PL RP.
-    </div>
+    <div class="highlight"><strong>تأكيد:</strong> لا نبيع بياناتك، ولا نشاركها مع أطراف ثالثة خارج إدارة NQ PL RP.</div>
   </div>
 
   <div class="section">
     <h3>🔐 أمان البيانات</h3>
-    <p>
-      نتخذ تدابير تقنية معقولة لحماية بياناتك من الوصول غير المصرح به أو التعديل أو الإفصاح.
-      تُخزَّن البيانات في قاعدة بيانات آمنة (Supabase) مع تشفير الاتصال عبر HTTPS.
-    </p>
+    <p>نتخذ تدابير تقنية معقولة لحماية بياناتك من الوصول غير المصرح به أو التعديل أو الإفصاح. تُخزَّن البيانات في قاعدة بيانات آمنة (Supabase) مع تشفير الاتصال عبر HTTPS.</p>
   </div>
 
   <div class="section">
     <h3>🍪 ملفات الجلسة (Cookies)</h3>
-    <p>
-      يستخدم النظام ملف تعريف ارتباط (Cookie) واحد يُسمى <strong style="color:var(--gold)">mdt_session</strong>
-      لتذكّر حالة تسجيل دخولك. لا يُستخدم لأغراض التتبع أو الإعلانات.
-    </p>
+    <p>يستخدم النظام ملف تعريف ارتباط (Cookie) واحد يُسمى <strong style="color:var(--gold)">mdt_session</strong> لتذكّر حالة تسجيل دخولك. لا يُستخدم لأغراض التتبع أو الإعلانات.</p>
   </div>
 
   <div class="section">
@@ -136,9 +160,7 @@
 
   <div class="section">
     <h3>📞 التواصل معنا</h3>
-    <p>
-      لأي استفسار يخص الخصوصية، تواصل مع إدارة NQ PL RP عبر قنوات الاتصال الرسمية داخل السيرفر.
-    </p>
+    <p>لأي استفسار يخص الخصوصية، تواصل مع إدارة NQ PL RP عبر قنوات الاتصال الرسمية داخل السيرفر.</p>
   </div>
 </main>
 
@@ -151,5 +173,15 @@
   </div>
 </footer>
 
+<script>
+  function toggleMenu(){
+    document.getElementById('ham').classList.toggle('open');
+    document.getElementById('mobileNav').classList.toggle('open');
+  }
+  document.addEventListener('click',function(e){
+    const ham=document.getElementById('ham'),nav=document.getElementById('mobileNav');
+    if(!ham.contains(e.target)&&!nav.contains(e.target)){ham.classList.remove('open');nav.classList.remove('open');}
+  });
+</script>
 </body>
 </html>
