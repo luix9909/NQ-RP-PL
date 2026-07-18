@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NQ PL RP — Entry</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#0f1419; --card:#1a1f2e; --input:#1e2433;
+      --border:#2d3548; --gold:#c9a961; --blue:#1e4080;
+      --blue2:#2c5282; --green:#48bb78; --red:#c53030;
+      --t:#fff; --td:#9ca3af;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--t);font-family:'Cairo',sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+    ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:var(--card)} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+    /* ── HEADER ── */
+    header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:var(--card);border-bottom:2px solid var(--gold)}
+    .logo{display:flex;align-items:center;gap:12px}
+    .shield{font-size:28px}
+    .logo-text h1{color:var(--gold);font-size:20px;font-weight:900;letter-spacing:3px;line-height:1}
+    .logo-text p{color:var(--td);font-size:11px;margin-top:2px}
+    nav a{color:var(--td);text-decoration:none;font-size:13px;font-weight:600;margin-right:20px;transition:color .2s}
+    nav a:hover{color:var(--gold)}
+
+    /* ── HERO ── */
+    .hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 50% 40%, rgba(201,169,97,.07) 0%, transparent 70%);pointer-events:none}
+    .badge{display:inline-flex;align-items:center;gap:8px;background:rgba(201,169,97,.1);border:1px solid rgba(201,169,97,.3);padding:6px 18px;border-radius:9999px;font-size:12px;color:var(--gold);font-weight:700;margin-bottom:28px}
+    .badge span{width:7px;height:7px;border-radius:50%;background:var(--green);animation:ping 1.5s ease-in-out infinite}
+    @keyframes ping{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.6)}}
+    .hero h2{font-size:clamp(28px,5vw,52px);font-weight:900;line-height:1.2;margin-bottom:16px}
+    .hero h2 span{color:var(--gold)}
+    .hero p{color:var(--td);font-size:15px;max-width:520px;line-height:1.8;margin-bottom:40px}
+    .btn-group{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+    .btn-primary{padding:13px 32px;background:var(--gold);color:#0f1419;border:none;border-radius:8px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:900;cursor:pointer;text-decoration:none;transition:opacity .2s}
+    .btn-primary:hover{opacity:.85}
+    .btn-secondary{padding:13px 32px;background:transparent;color:var(--gold);border:2px solid var(--gold);border-radius:8px;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .2s}
+    .btn-secondary:hover{background:rgba(201,169,97,.08)}
+
+    /* ── CARDS ── */
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;padding:0 28px 60px;max-width:960px;margin:0 auto;width:100%}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:24px;transition:border-color .2s}
+    .card:hover{border-color:var(--gold)}
+    .card-icon{font-size:28px;margin-bottom:12px}
+    .card h3{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:8px}
+    .card p{font-size:13px;color:var(--td);line-height:1.7}
+
+    /* ── FOOTER ── */
+    footer{background:var(--card);border-top:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    footer p{font-size:12px;color:var(--td)}
+    footer a{color:var(--gold);text-decoration:none;font-size:12px;margin-right:16px}
+    footer a:hover{text-decoration:underline}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="shield">🛡️</span>
+    <div class="logo-text">
+      <h1>NQ PL RP</h1>
+      <p>نظام الشرطة المتنقل</p>
+    </div>
+  </div>
+  <nav>
+    <a href="https://luix9909.github.io/NQ-RP-PL/" target="_blank">MDT</a>
+    <a href="privacy.html">سياسة الخصوصية</a>
+    <a href="terms.html">شروط الاستخدام</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="badge"><span></span> مباشر الآن — NQ PL RP</div>
+  <h2>مرحباً في نظام <span>الشرطة المتنقل</span></h2>
+  <p>
+    منصة متكاملة لإدارة البلاغات والمراسلات الأمنية وتنسيق الوحدات الميدانية
+    في لعبة NQ PL RP على Roblox.
+  </p>
+  <div class="btn-group">
+    <a class="btn-primary" href="https://luix9909.github.io/NQ-RP-PL/" target="_blank">🚔 دخول MDT</a>
+    <a class="btn-secondary" href="terms.html">قراءة الشروط</a>
+  </div>
+</section>
+
+<div class="cards">
+  <div class="card">
+    <div class="card-icon">📡</div>
+    <h3>البلاغات الفورية</h3>
+    <p>استقبال بلاغات المواطنين مباشرة داخل اللعبة وتوزيعها على أقرب وحدة.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">🗂️</div>
+    <h3>إدارة الوحدات</h3>
+    <p>تتبع جميع الضباط المتصلين ومعرفة موجاتهم ومناطقهم في الوقت الفعلي.</p>
+  </div>
+  <div class="card">
+    <div class="card-icon">💬</div>
+    <h3>قنوات التواصل</h3>
+    <p>نظام محادثة متعدد التردد يجمع بين الوحدات الميدانية والقيادة.</p>
+  </div>
+</div>
+
+<footer>
+  <p>© 2025 NQ PL RP — جميع الحقوق محفوظة</p>
+  <div>
+    <a href="privacy.html">سياسة الخصوصية</a>
+    <a href="terms.html">شروط الاستخدام</a>
+    <a href="https://luix9909.github.io/NQ-RP-PL/" target="_blank">MDT</a>
+  </div>
+</footer>
+
+</body>
+</html>

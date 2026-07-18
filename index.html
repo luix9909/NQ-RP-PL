@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NQ PL RP — Police MDT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419; --card: #1a1f2e; --input: #1e2433;
+      --border: #2d3548; --gold: #c9a961; --blue: #1e4080;
+      --blue2: #2c5282; --green: #48bb78; --orange: #c05621;
+      --red: #c53030; --red2: #e53e3e;
+      --t: #fff; --td: #9ca3af; --tm: #6b7280;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--t);font-family:'Cairo',sans-serif;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-track{background:var(--card)}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+    /* ── HEADER ── */
+    header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--card);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo-title{color:var(--gold);font-size:18px;font-weight:900;letter-spacing:2px}
+    .logo-sub{color:var(--td);font-size:11px}
+    .server-box{display:flex;align-items:center;gap:10px;background:var(--input);padding:7px 14px;border-radius:8px;border:1px solid var(--border)}
+    .srv-id{font-family:monospace;font-size:14px;font-weight:700;color:var(--gold);background:rgba(0,0,0,.3);padding:3px 10px;border-radius:4px;letter-spacing:1px;min-width:100px;text-align:center}
+    .dot{width:10px;height:10px;border-radius:50%;background:#4b5563;position:relative;flex-shrink:0}
+    .dot.on{background:var(--green)}
+    .dot.on::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--green);opacity:.4;animation:ping 1.5s ease-in-out infinite}
+    @keyframes ping{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.7);opacity:0}}
+    .status-t{font-size:13px;color:#6b7280}
+    .status-t.on{color:var(--green)}
+    .user-area{display:flex;align-items:center;gap:10px}
+    .badge-user{display:flex;align-items:center;gap:8px;background:var(--input);padding:6px 12px;border-radius:8px;border:1px solid var(--border)}
+    .avatar{width:30px;height:30px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+    .uname{font-size:13px;font-weight:700}
+    .urank{font-size:11px;color:var(--gold)}
+    button{cursor:pointer;font-family:'Cairo',sans-serif}
+    .btn-login{padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700}
+    .btn-login:hover{background:var(--blue2)}
+    .btn-out{width:34px;height:34px;background:var(--red);color:#fff;border:none;border-radius:6px;font-size:15px;display:flex;align-items:center;justify-content:center}
+    .btn-out:hover{background:var(--red2)}
+
+    /* ── RADIO BAR ── */
+    .radio-bar{display:flex;align-items:center;gap:8px;padding:8px 20px;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
+    .radio-bar::-webkit-scrollbar{height:2px}
+    .rl{color:var(--td);font-size:12px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:6px}
+    .rdiv{width:1px;height:22px;background:var(--border);margin:0 6px;flex-shrink:0}
+    .fq{display:flex;flex-direction:column;align-items:center;padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--td);min-width:80px;white-space:nowrap;transition:all .2s;flex-shrink:0}
+    .fq:hover{background:var(--border)}
+    .fq.active{background:rgba(201,169,97,.12);border-color:var(--gold);color:var(--gold)}
+    .fq-name{font-size:13px;font-weight:700}
+    .fq-desc{font-size:10px;opacity:.7}
+
+    /* ── MAIN ── */
+    .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:14px 20px;flex:1;min-height:0}
+    .panel{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;position:relative;min-height:0}
+    .p-dis{border-top:2px solid var(--red)}
+    .p-chat{border-top:2px solid var(--blue)}
+    .p-cmd{border-top:2px solid var(--gold)}
+    .ph{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--input);border-bottom:1px solid var(--border);flex-shrink:0}
+    .pt{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px}
+    .pb{font-size:10px;font-weight:700;padding:2px 8px;border-radius:9999px}
+    .pb-red{background:var(--red);color:#fff}
+    .pb-ora{background:var(--orange);color:#fff;animation:pulse 1.5s ease-in-out infinite}
+    .pb-frq{background:rgba(201,169,97,.15);color:var(--gold);border:1px solid rgba(201,169,97,.3);font-size:11px;padding:2px 10px;border-radius:4px}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    .pbody{flex:1;overflow-y:auto;padding:10px;min-height:0}
+
+    /* ── ONLINE PLAYERS ── */
+    .online-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 10px;border-bottom:1px solid var(--border);flex-shrink:0;min-height:32px}
+    .ol-label{font-size:10px;color:var(--tm);white-space:nowrap}
+    .ol-chip{display:flex;align-items:center;gap:4px;background:var(--input);border:1px solid var(--border);padding:2px 8px;border-radius:9999px;font-size:10px}
+    .ol-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+
+    /* ── CHAT ── */
+    .chat-msgs{flex:1;overflow-y:auto;padding:8px;min-height:0}
+    .chat-empty{text-align:center;color:var(--tm);font-size:13px;padding:20px;font-style:italic}
+    .msg{padding:7px 10px;background:var(--input);border-radius:6px;border-right:3px solid var(--blue);margin-bottom:5px}
+    .msg-h{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+    .msg-t{font-size:10px;color:var(--tm);font-family:monospace;direction:ltr}
+    .msg-rank{font-size:11px;font-weight:700;color:var(--gold)}
+    .msg-name{font-size:11px;font-weight:700}
+    .msg-c{font-size:13px;color:var(--td);line-height:1.5;word-break:break-word}
+    .chat-foot{padding:8px;background:var(--input);border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+    .chat-in{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:#fff;font-family:'Cairo',sans-serif;font-size:13px;outline:none}
+    .chat-in:focus{border-color:var(--blue)}
+    .chat-in::placeholder{color:var(--tm)}
+    .btn-send{width:36px;height:36px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-size:16px;display:flex;align-items:center;justify-content:center;transform:scaleX(-1)}
+    .btn-send:hover{background:var(--blue2)}
+    .btn-send:disabled,.chat-in:disabled{opacity:.4;cursor:not-allowed}
+    .lock{position:absolute;inset:0;background:rgba(15,20,25,.85);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:10}
+    .lock-icon{font-size:44px;opacity:.8}
+    .lock-title{font-size:17px;font-weight:700}
+    .lock-sub{font-size:12px;color:var(--td)}
+    .cmd-lock{position:absolute;inset:0;background:rgba(15,20,25,.6);backdrop-filter:blur(2px);pointer-events:none;z-index:5;display:none}
+
+    /* ── DISPATCHES ── */
+    .d-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:130px;gap:8px;color:var(--tm)}
+    .d-empty-icon{font-size:34px;color:var(--green);opacity:.5}
+    .d-empty-t{color:var(--green);font-weight:700}
+    .dcard{border-radius:8px;border:1px solid var(--orange);background:var(--input);padding:11px;margin-bottom:9px;position:relative;overflow:hidden;transition:all .3s}
+    .dcard.acc{border-color:rgba(72,187,120,.6);box-shadow:0 0 12px rgba(72,187,120,.12)}
+    .dcard.crit{border-color:var(--red);box-shadow:0 0 14px rgba(197,48,48,.15)}
+    .dstripe{position:absolute;top:0;left:0;right:0;height:3px}
+    .dstripe.pend{background:var(--orange)}
+    .dstripe.acc{background:var(--green)}
+    .dstripe.crit{background:var(--red);animation:pulse 1.5s ease-in-out infinite}
+    .dhead{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
+    .dbadges{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+    .pri{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:1px}
+    .pri-H{background:rgba(192,86,33,.2);color:var(--orange)}
+    .pri-C{background:rgba(197,48,48,.2);color:var(--red)}
+    .sbadge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;border:1px solid}
+    .s-pend{background:rgba(192,86,33,.15);color:var(--orange);border-color:rgba(192,86,33,.4);animation:pulse 1.5s ease-in-out infinite}
+    .s-acc{background:rgba(72,187,120,.15);color:var(--green);border-color:rgba(72,187,120,.4)}
+    .dtime{font-size:11px;color:var(--tm);font-family:monospace}
+    .dinfo{display:flex;flex-direction:column;gap:5px;margin-bottom:9px}
+    .drow{display:flex;align-items:flex-start;gap:7px;font-size:13px}
+    .drow-ic{font-size:13px;flex-shrink:0;margin-top:1px}
+    .dtype{color:#fff;font-weight:700}
+    .dloc{color:var(--td)}
+    .dcall{color:var(--tm);font-size:12px}
+    .ddesc{color:var(--tm);font-size:11px;line-height:1.5}
+    .acc-by{display:flex;align-items:center;gap:7px;padding:5px 9px;border-radius:5px;background:rgba(72,187,120,.1);border:1px solid rgba(72,187,120,.3);margin-bottom:7px;font-size:12px;color:var(--green);font-weight:700}
+    .dbtns{display:flex;gap:7px}
+    .ba{flex:1;padding:6px;background:#2f855a;color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;font-family:'Cairo',sans-serif}
+    .ba:hover{background:#276749}
+    .br{flex:1;padding:6px;background:var(--red);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;font-family:'Cairo',sans-serif}
+    .br:hover{background:var(--red2)}
+    .bc{width:100%;padding:6px;background:var(--border);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;font-family:'Cairo',sans-serif}
+    .bc:hover{background:#3f4b66}
+    .in-prog{text-align:center;font-size:12px;color:var(--tm);padding:5px}
+    .ba:disabled,.br:disabled,.bc:disabled{opacity:.5;cursor:not-allowed}
+    .btn-test{padding:3px 9px;font-size:11px;background:var(--card);border:1px solid var(--border);color:var(--tm);border-radius:4px}
+    .btn-test:hover{background:var(--border);color:#fff}
+
+    /* ── COMMANDS ── */
+    .cmd-list{display:flex;flex-direction:column;gap:5px}
+    .cmd{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:6px;border:1px solid var(--border);background:var(--input);color:var(--td);font-size:12px;direction:ltr;text-align:left;transition:all .2s;font-family:'Cairo',sans-serif;width:100%}
+    .cmd:hover:not(:disabled){background:var(--border);color:#fff}
+    .cmd:disabled{opacity:.3;cursor:not-allowed}
+    .cmd.danger{background:rgba(197,48,48,.1);border-color:rgba(197,48,48,.3)}
+    .cmd.danger:hover:not(:disabled){background:rgba(197,48,48,.2);border-color:var(--red)}
+    .cmd.warning{background:rgba(192,86,33,.1);border-color:rgba(192,86,33,.3)}
+    .cmd.warning:hover:not(:disabled){background:rgba(192,86,33,.2);border-color:var(--orange)}
+    .cmd.success{background:rgba(72,187,120,.1);border-color:rgba(72,187,120,.3)}
+    .cmd.success:hover:not(:disabled){background:rgba(72,187,120,.2);border-color:var(--green)}
+    .cmd-ic{font-size:14px;flex-shrink:0}
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <span style="font-size:24px;color:var(--gold)">🛡</span>
+    <div>
+      <div class="logo-title">NQ PL RP</div>
+      <div class="logo-sub">نظام بيانات الشرطة المتنقل</div>
+    </div>
+  </div>
+
+  <div class="server-box">
+    <span style="color:var(--td);font-size:12px">رمز السيرفر:</span>
+    <span class="srv-id" id="srvId">—</span>
+    <div style="width:1px;height:22px;background:var(--border)"></div>
+    <div class="dot" id="dot"></div>
+    <span class="status-t" id="stxt">غير متصل</span>
+  </div>
+
+  <div class="user-area" id="uarea">
+    <button class="btn-login" onclick="login()">تسجيل الدخول عبر روبلوكس</button>
+  </div>
+</header>
+
+<!-- RADIO BAR -->
+<div class="radio-bar">
+  <span class="rl">📻 ترددات اللاسلكي</span>
+  <div class="rdiv"></div>
+  <div id="freqs" style="display:flex;gap:8px"></div>
+</div>
+
+<!-- GRID -->
+<div class="grid">
+
+  <!-- DISPATCHES -->
+  <div class="panel p-dis">
+    <div class="ph">
+      <div class="pt">
+        <span>🚨</span> البلاغات النشطة
+        <span class="pb pb-red" id="dcnt">0</span>
+        <span class="pb pb-ora" id="dpend" style="display:none"></span>
+      </div>
+      <button class="btn-test" onclick="testDispatch()">إضافة تجريبي</button>
+    </div>
+    <div class="pbody" id="dlist"></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="panel p-chat">
+    <div class="ph">
+      <div class="pt"><span>📡</span> محادثة العمليات</div>
+      <span class="pb-frq" id="flabel">موجة 1</span>
+    </div>
+    <!-- Online on this frequency -->
+    <div class="online-bar" id="onlineBar">
+      <span class="ol-label">على الموجة:</span>
+      <span style="font-size:10px;color:var(--tm)">—</span>
+    </div>
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <!-- Lock -->
+    <div class="lock" id="chatLock">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">الوصول مقيد</div>
+      <div class="lock-sub">يرجى تسجيل الدخول للوصول إلى المحادثة</div>
+    </div>
+    <div class="chat-foot">
+      <input class="chat-in" id="cin" placeholder="اكتب رسالة أو نداء لاسلكي..." disabled
+             onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn-send" id="sbtn" disabled onclick="sendChat()">➤</button>
+    </div>
+  </div>
+
+  <!-- COMMANDS -->
+  <div class="panel p-cmd">
+    <div class="ph">
+      <div class="pt"><span>⚡</span> الأوامر السريعة</div>
+    </div>
+    <div class="cmd-lock" id="cmdLock"></div>
+    <div class="pbody" id="cmdList"></div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const API = '/api';
+let sb = null; // supabase client
+
+let S = {
+  user: null, serverId: null, freq: 1,
+  msgs: [], dispatches: [], presence: {},
+  rtCh: null, prCh: null,
+};
+
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+const FREQS = [
+  {id:1,name:'موجة 1',desc:'Patrol'},
+  {id:2,name:'موجة 2',desc:'SWAT'},
+  {id:3,name:'موجة 3',desc:'Air Support'},
+  {id:4,name:'موجة 4',desc:'General'},
+  {id:5,name:'موجة 5',desc:'General'},
+  {id:6,name:'موجة 6',desc:'General'},
+  {id:7,name:'موجة 7',desc:'General'},
+  {id:8,name:'موجة 8',desc:'General'},
+  {id:9,name:'موجة 9',desc:'General'},
+  {id:10,name:'موجة 10',desc:'General'},
+];
+
+const CMDS = [
+  {ic:'📞',t:'Dispatch, Unit standing by',cls:''},
+  {ic:'✅',t:'Roger that, 10-4',cls:'success'},
+  {ic:'🆘',t:'Officer needs backup!',cls:'danger'},
+  {ic:'⚡',t:'Suspect is fleeing the scene!',cls:'warning'},
+  {ic:'🛡',t:'Code 4, situation under control',cls:'success'},
+  {ic:'🚗',t:'Initiating vehicle pursuit',cls:''},
+  {ic:'📍',t:'Securing the perimeter',cls:''},
+  {ic:'👤',t:'Suspect detained, requesting transport',cls:'warning'},
+  {ic:'🔫',t:'Shots fired! Requesting all units',cls:'danger'},
+  {ic:'📋',t:'Incident report filed, over',cls:''},
+  {ic:'🚨',t:'All units respond! Priority One!',cls:'danger'},
+  {ic:'👁',t:'Visual on suspect, maintaining surveillance',cls:''},
+  {ic:'🚑',t:'Medical emergency, requesting EMS',cls:'danger'},
+  {ic:'⭐',t:'End of watch, signing off',cls:'success'},
+  {ic:'📢',t:'Attention all units, priority broadcast',cls:''},
+  {ic:'🎯',t:'Target acquired, moving to intercept',cls:''},
+  {ic:'🔒',t:'Area lockdown initiated',cls:''},
+  {ic:'📊',t:'Requesting active unit count',cls:''},
+  {ic:'⚠️',t:'General alert, all units be advised',cls:'warning'},
+];
+
+// ═══════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════
+let _actx;
+function actx(){if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();return _actx;}
+function click(){
+  try{const c=actx(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);o.frequency.value=1200;o.type='square';
+  g.gain.setValueAtTime(.15,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.07);
+  o.start(c.currentTime);o.stop(c.currentTime+.07);}catch(e){}
+}
+function alert3(){
+  try{const c=actx(),n=c.currentTime;
+  [0,.15,.3].forEach(d=>{const o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);o.frequency.value=d===.15?900:700;o.type='sine';
+  g.gain.setValueAtTime(.2,n+d);g.gain.exponentialRampToValueAtTime(.001,n+d+.12);
+  o.start(n+d);o.stop(n+d+.12);});}catch(e){}
+}
+function speak(t){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();click();
+  setTimeout(()=>{
+    const u=new SpeechSynthesisUtterance(t);u.rate=1.05;u.pitch=.85;u.volume=.85;
+    const v=window.speechSynthesis.getVoices(),en=v.find(x=>x.lang.startsWith('en'));
+    if(en)u.voice=en;u.onend=()=>setTimeout(click,60);
+    window.speechSynthesis.speak(u);
+  },110);
+}
+
+// ═══════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════
+const api=(p,o={})=>fetch(API+p,{credentials:'include',...o});
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+async function init(){
+  buildFreqs();buildCmds();renderDispatches();renderChat();
+
+  // Load supabase config from server
+  try{
+    const r=await api('/config');
+    if(r.ok){const c=await r.json();
+      if(c.supabaseUrl&&c.supabaseAnonKey)
+        sb=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);
+    }
+  }catch(e){}
+
+  // Try IP auto-login first, then check session
+  try{await api('/auth/ip-login');}catch(e){}
+  await loadMe();
+}
+
+async function loadMe(){
+  try{
+    const r=await api('/auth/me');
+    setUser(r.ok?await r.json():null);
+  }catch(e){setUser(null);}
+}
+
+function setUser(u){
+  S.user=u;S.serverId=u?.jobId||null;
+  renderHeader();
+  if(u){
+    document.getElementById('chatLock').style.display='none';
+    document.getElementById('cin').disabled=false;
+    document.getElementById('sbtn').disabled=false;
+    document.getElementById('cmdLock').style.display='none';
+    subscribe();
+  }else{
+    document.getElementById('chatLock').style.display='flex';
+    document.getElementById('cin').disabled=true;
+    document.getElementById('sbtn').disabled=true;
+    document.getElementById('cmdLock').style.display='block';
+    unsub();S.msgs=[];S.dispatches=[];S.presence={};
+    renderChat();renderDispatches();renderOnline();
+  }
+}
+
+// ═══════════════════════════════════════════
+// HEADER
+// ═══════════════════════════════════════════
+function renderHeader(){
+  const u=S.user;
+  document.getElementById('srvId').textContent=S.serverId||'—';
+  const dot=document.getElementById('dot'),st=document.getElementById('stxt');
+  dot.className='dot'+(u?' on':'');
+  st.textContent=u?'متصل':'غير متصل';st.className='status-t'+(u?' on':'');
+  const ua=document.getElementById('uarea');
+  if(u){
+    ua.innerHTML=`<div class="badge-user">
+      ${u.avatarUrl?`<img class="avatar" src="${esc(u.avatarUrl)}" alt="">`:'<span style="font-size:22px">👮</span>'}
+      <div><div class="uname">${esc(u.userName)}</div>
+      <div class="urank">${esc(u.rank)}${u.team?' · '+esc(u.team):''}</div></div>
+    </div>
+    <button class="btn-out" title="خروج" onclick="logout()">⏻</button>`;
+  }else{
+    ua.innerHTML=`<button class="btn-login" onclick="login()">تسجيل الدخول عبر روبلوكس</button>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// FREQUENCIES
+// ═══════════════════════════════════════════
+function buildFreqs(){
+  document.getElementById('freqs').innerHTML=
+    FREQS.map(f=>`<button class="fq${f.id===S.freq?' active':''}" id="fq${f.id}" onclick="changeFreq(${f.id})">
+      <span class="fq-name">${f.name}</span><span class="fq-desc">${f.desc}</span>
+    </button>`).join('');
+}
+
+function changeFreq(id){
+  S.freq=id;
+  FREQS.forEach(f=>{const b=document.getElementById('fq'+f.id);if(b)b.className='fq'+(f.id===id?' active':'');});
+  document.getElementById('flabel').textContent='موجة '+id;
+  click();speak('Frequency changed to channel '+id);
+  // Update presence with new frequency
+  if(S.prCh&&S.user){
+    S.prCh.track({userId:S.user.robloxUserId,userName:S.user.userName,rank:S.user.rank,freq:id});
+  }
+  loadChat();
+}
+
+// ═══════════════════════════════════════════
+// COMMANDS
+// ═══════════════════════════════════════════
+function buildCmds(){
+  document.getElementById('cmdList').innerHTML=
+    `<div class="cmd-list">`+
+    CMDS.map(c=>`<button class="cmd ${c.cls}" onclick="sendCmd(this)" data-t="${esc(c.t)}" disabled>
+      <span class="cmd-ic">${c.ic}</span><span>${c.t}</span>
+    </button>`).join('')+
+    `</div>`;
+}
+
+async function sendCmd(btn){
+  if(!S.user||!S.serverId)return;
+  click();await sendMsg(btn.dataset.t);
+}
+
+function setCmdsDisabled(dis){
+  document.querySelectorAll('.cmd').forEach(b=>b.disabled=dis);
+}
+
+// ═══════════════════════════════════════════
+// REALTIME SUBSCRIBE
+// ═══════════════════════════════════════════
+function subscribe(){
+  if(!sb||!S.serverId)return;
+  const sid=S.serverId,u=S.user;
+
+  // ── Chat + Dispatches
+  S.rtCh=sb.channel('mdt:'+sid+':'+S.freq)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mdt_chat',filter:'server_id=eq.'+sid},p=>{
+      const m=p.new;if(m.frequency===S.freq){S.msgs.push(m);renderChat();speak(m.content);}
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'mdt_dispatches',filter:'server_id=eq.'+sid},p=>{
+      S.dispatches.unshift(p.new);renderDispatches();alert3();
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'mdt_dispatches',filter:'server_id=eq.'+sid},p=>{
+      S.dispatches=S.dispatches.map(d=>d.id===p.new.id?p.new:d);renderDispatches();
+    })
+    .on('postgres_changes',{event:'DELETE',schema:'public',table:'mdt_dispatches'},p=>{
+      S.dispatches=S.dispatches.filter(d=>d.id!==p.old.id);renderDispatches();
+    })
+    .subscribe();
+
+  // ── Presence (online officers)
+  S.prCh=sb.channel('pres:'+sid,{config:{presence:{key:u.robloxUserId}}})
+    .on('presence',{event:'sync'},()=>{S.presence=S.prCh.presenceState();renderOnline();})
+    .subscribe(async st=>{
+      if(st==='SUBSCRIBED'){
+        await S.prCh.track({userId:u.robloxUserId,userName:u.userName,rank:u.rank,freq:S.freq});
+        setCmdsDisabled(false);
+      }
+    });
+
+  loadChat();loadDispatches();
+}
+
+function unsub(){
+  if(S.rtCh){sb?.removeChannel(S.rtCh);S.rtCh=null;}
+  if(S.prCh){sb?.removeChannel(S.prCh);S.prCh=null;}
+  setCmdsDisabled(true);
+}
+
+// ═══════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════
+async function loadChat(){
+  if(!sb||!S.serverId)return;
+  const{data}=await sb.from('mdt_chat').select('*')
+    .eq('server_id',S.serverId).eq('frequency',S.freq)
+    .order('created_at',{ascending:true}).limit(100);
+  S.msgs=data||[];renderChat();
+}
+
+async function loadDispatches(){
+  if(!sb||!S.serverId)return;
+  const{data}=await sb.from('mdt_dispatches').select('*')
+    .eq('server_id',S.serverId).order('created_at',{ascending:false}).limit(50);
+  S.dispatches=data||[];renderDispatches();
+}
+
+// ═══════════════════════════════════════════
+// SEND
+// ═══════════════════════════════════════════
+async function sendMsg(content){
+  if(!sb||!S.user||!S.serverId)return;
+  await sb.from('mdt_chat').insert({
+    server_id:S.serverId,frequency:S.freq,
+    roblox_user_id:S.user.robloxUserId,user_name:S.user.userName,
+    rank:S.user.rank,team:S.user.team||'',content,
+  });
+}
+
+async function sendChat(){
+  const inp=document.getElementById('cin'),c=inp.value.trim();
+  if(!c)return;inp.value='';click();await sendMsg(c);
+}
+
+// ═══════════════════════════════════════════
+// DISPATCH ACTIONS
+// ═══════════════════════════════════════════
+async function accDispatch(id){
+  click();
+  const r=await api('/dispatches/'+id+'/accept',{method:'PATCH'});
+  if(!r.ok){const j=await r.json().catch(()=>({}));alert(j.error||'فشل القبول');}
+}
+async function rejDispatch(id){click();await api('/dispatches/'+id+'/reject',{method:'PATCH'});}
+async function clrDispatch(id){
+  click();if(sb)await sb.from('mdt_dispatches').delete().eq('id',id);
+}
+async function testDispatch(){
+  if(!sb||!S.serverId)return;click();
+  const types=['سطو مسلح','مطاردة','شجار','حريق','حادث مروري'];
+  const locs=['المركز','الميناء','المطار','الغابة','الصحراء'];
+  await sb.from('mdt_dispatches').insert({
+    server_id:S.serverId,caller:'مواطن_'+Math.floor(Math.random()*999),
+    type:types[Math.floor(Math.random()*types.length)],
+    location:locs[Math.floor(Math.random()*locs.length)],
+    description:'بلاغ تجريبي من النظام',
+    priority:Math.random()>.7?'CRITICAL':'HIGH',status:'pending',
+  });
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+const FC={1:'#1e4080',2:'#c53030',3:'#c9a961'};
+
+function renderChat(){
+  const b=document.getElementById('chatMsgs');
+  if(!S.msgs.length){b.innerHTML='<div class="chat-empty">مرحباً بك في نظام عمليات NQ PL RP</div>';return;}
+  b.innerHTML=S.msgs.map(m=>`<div class="msg" style="border-right-color:${FC[m.frequency]||'#48bb78'}">
+    <div class="msg-h">
+      <span class="msg-t" dir="ltr">${new Date(m.created_at).toLocaleTimeString('en-US',{hour12:false})}</span>
+      <span class="msg-rank">[${esc(m.rank)}]</span>
+      <span class="msg-name">${esc(m.user_name)}</span>
+    </div>
+    <div class="msg-c">${esc(m.content)}</div>
+  </div>`).join('');
+  b.scrollTop=b.scrollHeight;
+}
+
+function renderDispatches(){
+  const cnt=S.dispatches.length,pend=S.dispatches.filter(d=>d.status==='pending').length;
+  document.getElementById('dcnt').textContent=cnt;
+  const pb=document.getElementById('dpend');
+  pb.style.display=pend?'':'none';if(pend)pb.textContent=pend+' انتظار';
+  const b=document.getElementById('dlist');
+  if(!cnt){
+    b.innerHTML=`<div class="d-empty"><div class="d-empty-icon">✅</div>
+      <div class="d-empty-t">لا توجد بلاغات نشطة</div>
+      <div style="font-size:12px">جميع الوحدات في وضع الاستعداد</div></div>`;
+    return;
+  }
+  b.innerHTML=S.dispatches.map(d=>{
+    const isPend=d.status==='pending',isAcc=d.status==='accepted',isCrit=d.priority==='CRITICAL';
+    const isMe=S.user&&d.accepted_by===S.user.robloxUserId;
+    return `<div class="dcard ${isAcc?'acc':''} ${isCrit&&!isAcc?'crit':''}">
+      <div class="dstripe ${isAcc?'acc':isCrit?'crit':'pend'}"></div>
+      <div class="dhead">
+        <div class="dbadges">
+          <span class="pri pri-${isCrit?'C':'H'}">${d.priority}</span>
+          ${isPend?'<span class="sbadge s-pend">انتظار</span>':''}
+          ${isAcc?'<span class="sbadge s-acc">مقبول ✓</span>':''}
+        </div>
+        <span class="dtime" dir="ltr">${new Date(d.created_at).toLocaleTimeString('en-US',{hour12:false})}</span>
+      </div>
+      <div class="dinfo">
+        <div class="drow"><span class="drow-ic">🚨</span><span class="dtype">${esc(d.type)}</span></div>
+        <div class="drow"><span class="drow-ic">📍</span><span class="dloc">${esc(d.location)}</span></div>
+        <div class="drow"><span class="drow-ic">📞</span><span class="dcall">${esc(d.caller)}</span></div>
+        ${d.description?`<div class="drow"><span class="drow-ic">📋</span><span class="ddesc">${esc(d.description)}</span></div>`:''}
+      </div>
+      ${isAcc&&d.accepted_by_name?`<div class="acc-by">👮 قبله: ${esc(d.accepted_by_name)}${isMe?' <span style="color:#9ca3af;font-size:10px">(أنت)</span>':''}</div>`:''}
+      ${S.user?`<div class="dbtns">
+        ${isPend?`<button class="ba" onclick="accDispatch('${d.id}')">✓ قبول</button>
+                  <button class="br" onclick="rejDispatch('${d.id}')">✗ رفض</button>`:''}
+        ${isAcc&&isMe?`<button class="bc" onclick="clrDispatch('${d.id}')">إنهاء البلاغ</button>`:''}
+        ${isAcc&&!isMe?`<div class="in-prog">⏳ تحت التنفيذ</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderOnline(){
+  const bar=document.getElementById('onlineBar');
+  // Flatten presence and filter by current frequency
+  const all=Object.values(S.presence).flat().filter(p=>p.freq===S.freq);
+  if(!all.length){
+    bar.innerHTML=`<span class="ol-label">على الموجة ${S.freq}:</span>
+      <span style="font-size:10px;color:var(--tm)">لا يوجد أحد</span>`;
+    return;
+  }
+  bar.innerHTML=`<span class="ol-label">على الموجة ${S.freq}:</span>`+
+    all.map(p=>`<div class="ol-chip">
+      <div class="ol-dot"></div>
+      <span style="font-weight:700;color:#fff">${esc(p.userName)}</span>
+      <span style="color:var(--gold)">[${esc(p.rank)}]</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+async function login(){const r=await api('/auth/roblox');if(r.ok){const{url}=await r.json();if(url)location.href=url;}}
+async function logout(){await api('/auth/logout',{method:'POST'});setUser(null);}
+
+// ═══════════════════════════════════════════
+// GO
+// ═══════════════════════════════════════════
+window.onload=init;
+</script>
+</body>
+</html>
